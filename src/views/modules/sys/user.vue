@@ -147,7 +147,7 @@
         let length = cellValue.length
         let half = length / 2
         let quarter = length / 4
-        return cellValue.substr(0, quarter) + '****' + cellValue.substr(half + quarter, length - half - quarter)
+        return cellValue.substr(0, quarter) + '****' + cellValue.substr(half + quarter, length)
       }
     }
   }
