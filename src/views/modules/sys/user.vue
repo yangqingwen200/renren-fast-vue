@@ -1,119 +1,88 @@
 <template>
   <div class="mod-user">
     <el-form :inline="true" :model="dataForm" @keyup.enter.native="getDataList()">
-      <el-form-item>
-        <el-input v-model="dataForm.userName" placeholder="用户名" clearable></el-input>
+      <el-form-item label="用户名">
+        <el-input v-model="dataForm.userName" placeholder="请输入用户名" clearable></el-input>
+      </el-form-item>
+      <el-form-item label="状态">
+        <el-select v-model="dataForm.status" placeholder="请选择" style="width: 100px">
+          <el-option label="全部" value=""></el-option>
+          <el-option label="停用" value="0"></el-option>
+          <el-option label="正常" value="1"></el-option>
+        </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button @click="getDataList()">查询</el-button>
-        <el-button v-if="isAuth('sys:user:save')" type="primary" @click="addOrUpdateHandle()">新增</el-button>
-        <el-button v-if="isAuth('sys:user:delete')" type="danger" @click="deleteHandle()" :disabled="dataListSelections.length <= 0">批量删除</el-button>
+        <el-button @click="search()">
+          <icon-svg name="search" class="button_svg"></icon-svg>查询
+        </el-button>
+        <el-button v-if="isAuth('sys:user:save')" type="primary" @click="addOrUpdateHandle()">
+          <icon-svg name="add" class="button_svg"></icon-svg>新增
+        </el-button>
+        <el-button v-if="isAuth('sys:user:delete')" type="danger" @click="deleteHandle()" :disabled="dataListSelections.length <= 0">
+          <icon-svg name="delete" class="button_svg"></icon-svg>批量删除
+        </el-button>
       </el-form-item>
     </el-form>
-    <el-table
-      :data="dataList"
-      border
-      v-loading="dataListLoading"
-      @selection-change="selectionChangeHandle"
-      style="width: 100%;">
-      <el-table-column
-        type="selection"
-        header-align="center"
-        align="center"
-        width="50">
-      </el-table-column>
-      <el-table-column
-        prop="userId"
-        header-align="center"
-        align="center"
-        width="80"
-        label="ID">
-      </el-table-column>
-      <el-table-column
-        prop="username"
-        header-align="center"
-        align="center"
-        label="用户名">
-      </el-table-column>
-      <el-table-column
-        prop="email"
-        header-align="center"
-        align="center"
-        label="邮箱">
-      </el-table-column>
-      <el-table-column
-        prop="mobile"
-        header-align="center"
-        align="center"
-        label="手机号">
-      </el-table-column>
-      <el-table-column
-        prop="status"
-        header-align="center"
-        align="center"
-        label="状态">
-        <template slot-scope="scope">
-          <el-tag v-if="scope.row.status === 0" size="small" type="danger">禁用</el-tag>
-          <el-tag v-else size="small">正常</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column
-        prop="createTime"
-        header-align="center"
-        align="center"
-        width="180"
-        label="创建时间">
-      </el-table-column>
-      <el-table-column
-        fixed="right"
-        header-align="center"
-        align="center"
-        width="150"
-        label="操作">
-        <template slot-scope="scope">
-          <el-button v-if="isAuth('sys:user:update')" type="text" size="small" @click="addOrUpdateHandle(scope.row.userId)">修改</el-button>
-          <el-button v-if="isAuth('sys:user:delete')" type="text" size="small" @click="deleteHandle(scope.row.userId)">删除</el-button>
-        </template>
-      </el-table-column>
+
+    <el-table :data="dataList" border v-loading="dataListLoading" @selection-change="selectionChangeHandle" style="width: 100%;">
+      <my-el-table-column :columns="columns" />
     </el-table>
-    <el-pagination
-      @size-change="sizeChangeHandle"
-      @current-change="currentChangeHandle"
-      :current-page="pageIndex"
-      :page-sizes="[10, 20, 50, 100]"
-      :page-size="pageSize"
-      :total="totalPage"
-      layout="total, sizes, prev, pager, next, jumper">
-    </el-pagination>
+
+    <!-- 分页 -->
+    <my-el-pagination ref="myPagination" :total-page="totalPage" :watch-obj="dataForm" @data-change="getDataList" />
+
     <!-- 弹窗, 新增 / 修改 -->
-    <add-or-update v-if="addOrUpdateVisible" ref="addOrUpdate" @refreshDataList="getDataList"></add-or-update>
+    <add-or-update v-if="addOrUpdateVisible" ref="addOrUpdate" @refreshDataList="getDataList" />
   </div>
 </template>
 
 <script>
   import AddOrUpdate from './user-add-or-update'
+  import myElTableColumn from '../../../components/el-table-column'
+  import myElPagination from '../../../components/el-pagination'
+
   export default {
     data () {
       return {
         dataForm: {
-          userName: ''
+          userName: '',
+          status: ''
         },
         dataList: [],
-        pageIndex: 1,
-        pageSize: 10,
         totalPage: 0,
         dataListLoading: false,
         dataListSelections: [],
-        addOrUpdateVisible: false
+        addOrUpdateVisible: false,
+        // 第一个对象, 渲染出来在表格最后一列, 最后一个对象, 渲染出来在表格的倒数第二列
+        columns: [
+          {label: '操作',
+            operations: [
+              {label: '编辑', func: this.addOrUpdateHandle, pms: 'sys:user:update'},
+              {label: '删除', func: this.deleteHandle, pms: 'sys:user:delete'}]
+          },
+          {type: 'selection'},
+          {prop: 'userId', label: 'ID', width: 60},
+          {prop: 'username', label: '用户名'},
+          {prop: 'email', label: '邮箱', headerAlign: 'center', align: 'center'},
+          {prop: 'mobile', label: '手机号', formatter: this.dealPhone},
+          {prop: 'createTime', label: '创建时间'},
+          {prop: 'status', label: '状态', custom: this.customStyle}
+        ]
       }
     },
     components: {
-      AddOrUpdate
+      AddOrUpdate,
+      myElTableColumn,
+      myElPagination
     },
     activated () {
       this.getDataList()
     },
     methods: {
+      search () {
+        // 自动刷回到第一页
+        this.$refs.myPagination.currentChange(1)
+      },
       // 获取数据列表
       getDataList () {
         this.dataListLoading = true
@@ -121,9 +90,10 @@
           url: this.$http.adornUrl('/sys/user/list'),
           method: 'get',
           params: this.$http.adornParams({
-            'page': this.pageIndex,
-            'limit': this.pageSize,
-            'username': this.dataForm.userName
+            page: this.$refs.myPagination.pageIndex,
+            limit: this.$refs.myPagination.pageSize,
+            username: this.dataForm.userName,
+            status: this.dataForm.status
           })
         }).then(({data}) => {
           if (data && data.code === 0) {
@@ -136,57 +106,48 @@
           this.dataListLoading = false
         })
       },
-      // 每页数
-      sizeChangeHandle (val) {
-        this.pageSize = val
-        this.pageIndex = 1
-        this.getDataList()
-      },
-      // 当前页
-      currentChangeHandle (val) {
-        this.pageIndex = val
-        this.getDataList()
-      },
       // 多选
       selectionChangeHandle (val) {
         this.dataListSelections = val
       },
       // 新增 / 修改
-      addOrUpdateHandle (id) {
+      addOrUpdateHandle (row) {
         this.addOrUpdateVisible = true
         this.$nextTick(() => {
-          this.$refs.addOrUpdate.init(id)
+          this.$refs.addOrUpdate.init(row ? row.userId : '')
         })
       },
       // 删除
-      deleteHandle (id) {
-        var userIds = id ? [id] : this.dataListSelections.map(item => {
+      deleteHandle (row) {
+        let userIds = row ? [row.userId] : this.dataListSelections.map(item => {
           return item.userId
         })
-        this.$confirm(`确定对[id=${userIds.join(',')}]进行[${id ? '删除' : '批量删除'}]操作?`, '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
+        let msg = `确定对[id=${userIds.join(',')}]进行[${row ? '删除' : '批量删除'}]操作?`
+        this.showCfm(msg).then(() => {
           this.$http({
             url: this.$http.adornUrl('/sys/user/delete'),
             method: 'post',
             data: this.$http.adornData(userIds, false)
           }).then(({data}) => {
-            if (data && data.code === 0) {
-              this.$message({
-                message: '操作成功',
-                type: 'success',
-                duration: 1500,
-                onClose: () => {
-                  this.getDataList()
-                }
-              })
-            } else {
-              this.$message.error(data.msg)
-            }
+            this.showMsg(data, function () {
+              this.getDataList()
+            }.bind(this))
           })
-        }).catch(() => {})
+        })
+      },
+      customStyle (row, cellValue) {
+        if (cellValue === 1) {
+          // 不能element标签, 如<el-tag>等等, 只能写标签编译过之后class样式
+          return '<span class="el-tag el-tag--small">正常</span>'
+        } else {
+          return '<span class="el-tag el-tag--small el-tag--danger">停用</span>'
+        }
+      },
+      dealPhone (row, column, cellValue) {
+        let length = cellValue.length
+        let half = length / 2
+        let quarter = length / 4
+        return cellValue.substr(0, quarter) + '****' + cellValue.substr(half + quarter, length - half - quarter)
       }
     }
   }

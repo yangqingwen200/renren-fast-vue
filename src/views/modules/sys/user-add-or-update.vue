@@ -32,8 +32,12 @@
       </el-form-item>
     </el-form>
     <span slot="footer" class="dialog-footer">
-      <el-button @click="visible = false">取消</el-button>
-      <el-button type="primary" @click="dataFormSubmit()">确定</el-button>
+      <el-button @click="visible = false">
+        <icon-svg name="wrong" class="button_svg"></icon-svg>取消
+      </el-button>
+      <el-button type="primary" @click="dataFormSubmit()">
+        <icon-svg name="success" class="button_svg"></icon-svg>确定
+      </el-button>
     </span>
   </el-dialog>
 </template>
@@ -44,6 +48,9 @@
     data () {
       var validatePassword = (rule, value, callback) => {
         if (!this.dataForm.id && !/\S/.test(value)) {
+          this.$notify({
+            message: '密码不能为空'
+          })
           callback(new Error('密码不能为空'))
         } else {
           callback()

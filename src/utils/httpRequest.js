@@ -17,6 +17,12 @@ const http = axios.create({
  */
 http.interceptors.request.use(config => {
   config.headers['token'] = Vue.cookie.get('token') // 请求头带上token
+  let temp = config.params
+  for (let i in temp) {
+    if (temp[i] === '') {
+      delete config.params[i] // 踢掉为空的属性
+    }
+  }
   return config
 }, error => {
   return Promise.reject(error)
