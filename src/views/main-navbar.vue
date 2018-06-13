@@ -101,6 +101,9 @@
             data: this.$http.adornData()
           }).then(({data}) => {
             if (data && data.code === 0) {
+              this.$store.commit('common/updateMenuActiveName', '')
+              this.$store.commit('common/updateMainTabs', [])
+              this.$store.commit('common/updateMainTabsActiveName', '')
               this.$cookie.delete('token')
               this.$router.options.isAddDynamicMenuRoutes = false
               this.$router.push({ name: 'login' })

@@ -25,18 +25,20 @@
     name: 'pagination',
     data () {
       return {
+        pageIndex: this.pageIndexDefault || 1,
+        pageSize: this.pageSizeDefault || 10
       }
     },
     props: {
-      pageIndex: {
+      // 页面初始化页码
+      pageIndexDefault: {
         type: Number,
-        required: false,
-        default: 1
+        required: false
       },
-      pageSize: {
+      // 每页条数大小
+      pageSizeDefault: {
         type: Number,
-        required: false,
-        default: 10
+        required: false
       },
       totalPage: {
         type: Number,
